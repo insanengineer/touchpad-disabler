@@ -14,7 +14,7 @@ gcc -Wall -g -o touchpad-disabler touchpad-disabler.c -ludev
 
 ###Todo
 * Create a Makefile
+* create a system tray indicator to show touchpad status
 * Create a systemd service script
-* Configure app to be a daemon
 * Create a AUR package
 * Create a ubuntu and debian package
