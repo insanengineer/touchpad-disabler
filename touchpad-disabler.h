@@ -10,7 +10,7 @@
 **    but WITHOUT ANY WARRANTY; without even the implied warranty of
 **    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 **    GNU General Public License for more details.
-
+**
 **    You should have received a copy of the GNU General Public License
 **    along with touchpad-disabler.
 **    If not, see <http://www.gnu.org/licenses/>.
@@ -20,15 +20,6 @@
 #define _touchpad_disabler_h
 
 #include <stdbool.h>
-#include <libudev.h>
-
-// udev structure pointers
-struct udev *udev;
-struct udev_monitor *device_monitor;
-struct udev_enumerate *dev_enum;
-struct udev_list_entry *devices;
-struct udev_list_entry *dev_list_entry;
-struct udev_device *device;
 
 char *get_saved_file_path();
 bool check_file(char file_path[]);

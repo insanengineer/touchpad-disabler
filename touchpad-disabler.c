@@ -10,7 +10,7 @@
 **    but WITHOUT ANY WARRANTY; without even the implied warranty of
 **    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 **    GNU General Public License for more details.
-
+**
 **    You should have received a copy of the GNU General Public License
 **    along with touchpad-disabler.
 **    If not, see <http://www.gnu.org/licenses/>.
@@ -22,6 +22,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
+#include <libudev.h>
 
 #include "touchpad-disabler.h"
 
@@ -42,9 +43,9 @@
 char *get_saved_file_path()
 {
     char saved_file_name[] = "/.saved_device";
-    char *users_home_path;
+    //char *users_home_path;
 
-    users_home_path = getenv("HOME");
+    char *users_home_path = getenv("HOME");
 
     strcat(users_home_path, saved_file_name);
 
@@ -73,7 +74,7 @@ bool check_file(char file_path[])
 
     if (file_check_result == 0)
     {
-       result = true;
+        result = true;
     }
 
     return result;
@@ -92,23 +93,21 @@ bool check_file(char file_path[])
 ****************************************************************************/
 char *read_saved_device(char file_path[])
 {
-    FILE *file_handle;
     char read_buffer[25];
     char *read_data;
 
     if (check_file(file_path) == true)
     {
-    	// open the saved device file as readonly
-        file_handle = fopen(file_path, "r");
+        // open the saved device file as readonly
+        FILE *file_handle = fopen(file_path, "r");
 
         if (file_handle != NULL)
         {
-           fgets(read_buffer, 25, file_handle);
-           //strcpy(data, read_buffer);
+            fgets(read_buffer, 25, file_handle);
 
-           read_data = read_buffer;
+            read_data = read_buffer;
 
-           fclose(file_handle);
+            fclose(file_handle);
         }
     }
 
@@ -128,15 +127,13 @@ char *read_saved_device(char file_path[])
 ****************************************************************************/
 void write_saved_device(const char data[], char file_path[])
 {
-    FILE *file_handle;
-
     // open the saved device file foe writing
-    file_handle = fopen(file_path, "w");
+    FILE *file_handle = fopen(file_path, "w");
 
     if (file_handle != NULL)
     {
-       fputs(data, file_handle);
-       fclose(file_handle);
+        fputs(data, file_handle);
+        fclose(file_handle);
     }
 }
 
@@ -156,61 +153,15 @@ void write_saved_device(const char data[], char file_path[])
 bool check_for_mouse(struct udev_device *dev)
 {
     bool result = false;
-    const char *dev_path_udev;
-    const char *dev_path_string = "/dev/input/mouse";
-    int char_match_cnt = 0;
 
-    dev_path_udev = udev_device_get_devnode(dev);
+    const char *dev_path_udev = udev_device_get_devnode(dev);
 
-    // make sure that the data we are looking at is valid
-    if (dev_path_udev != NULL)
+    char *mouse_detect = strstr(dev_path_udev, "mouse");
+
+    if (mouse_detect != NULL)
     {
-        // length of the device path string
-        int dev_path_string_len = strlen(dev_path_string);
-
-        for (int i = 0; i < dev_path_string_len; i++)
-        {
-            if (dev_path_string[i] == dev_path_udev[i])
-            {
-                char_match_cnt++;
-            }
-        }
-
-        if (char_match_cnt == dev_path_string_len)
-        {
-            result = true;
-        }
-    }
-
-    return result;
-}
-
-/****************************************************************************
-** Function Name: compare_device
-**
-** Inputs: udev_device dev,  char buffer
-**
-** Output: A boolean value if the current plugged in device matched that of
-**         the device that is contained int he buffer variable. A value of
-** 	   true means the curent device matches the buffer.
-**
-** Description: This function uses strcmp to compare the buffer string to
-**  		the current device detected from udev
-**
-****************************************************************************/
-bool compare_device(struct udev_device *dev, char buffer[])
-{
-    int compare = 0;
-    bool result = false;
-
-    if (udev_device_get_devnode(dev) != NULL)
-    {
-        compare = strcmp(udev_device_get_devnode(dev), buffer);
-
-        if (compare == 0)
-        {
-            result = true;
-        }
+        printf("Mouse Detected");
+        result = true;
     }
 
     return result;
@@ -228,13 +179,14 @@ bool compare_device(struct udev_device *dev, char buffer[])
 ****************************************************************************/
 int main (int argc, char *argv[])
 {
-    char *file_contents_buffer; //[25];
-    char *saved_file_path;
+    struct udev_list_entry *dev_list_entry;
+    struct udev_device *device;
 
-    saved_file_path = get_saved_file_path();
+    char *saved_file_path = get_saved_file_path();
+    char *file_contents_buffer = read_saved_device(saved_file_path);
 
     // create the udev object
-    udev = udev_new();
+    struct udev *udev = udev_new();
 
     if (!udev)
     {
@@ -242,7 +194,7 @@ int main (int argc, char *argv[])
     }
 
     // setup a udev monitor for input devices
-    device_monitor = udev_monitor_new_from_netlink(udev, "udev");
+    struct udev_monitor *device_monitor = udev_monitor_new_from_netlink(udev, "udev");
 
     // setup a filter for the monitor so that we only get notified of input devices
     udev_monitor_filter_add_match_subsystem_devtype(device_monitor, "input", NULL);
@@ -251,7 +203,7 @@ int main (int argc, char *argv[])
     udev_monitor_enable_receiving(device_monitor);
 
     // create a list of the input devices
-    dev_enum = udev_enumerate_new(udev);
+    struct udev_enumerate *dev_enum = udev_enumerate_new(udev);
 
     // setup a enumerate filter of the input devices
     udev_enumerate_add_match_subsystem(dev_enum, "input");
@@ -260,31 +212,36 @@ int main (int argc, char *argv[])
     udev_enumerate_scan_devices(dev_enum);
 
     // the device list
-    devices = udev_enumerate_get_list_entry(dev_enum);
+    struct udev_list_entry *devices = udev_enumerate_get_list_entry(dev_enum);
 
     udev_list_entry_foreach(dev_list_entry, devices)
     {
-        const char *path;
+        const char *path = udev_list_entry_get_name(dev_list_entry);;
 
-        path = udev_list_entry_get_name(dev_list_entry);
+        //path = udev_list_entry_get_name(dev_list_entry);
         device = udev_device_new_from_syspath(udev, path);
 
         if (device)
         {
-            if (check_for_mouse(device) == true)
-            {
-                file_contents_buffer = read_saved_device(saved_file_path);
+            const char *dev_node = udev_device_get_devnode(device);
 
-	        if (compare_device(device, file_contents_buffer) == true)
+            if (dev_node != NULL)
+            {
+                if (check_for_mouse(device) == true)
                 {
-                   // disable the touchpad since a mouse is plugged in
-                   system("synclient TouchpadOff=1");
-                   break;
+                    //file_contents_buffer = read_saved_device(saved_file_path);
+
+                    if (strcmp(dev_node, file_contents_buffer) == 0)
+                    {
+                        system("synclient TouchpadOff=1");
+                        break;
+                    }
                 }
             }
         }
     }
 
+    free(dev_enum);
     free(devices);
     free(dev_list_entry);
 
@@ -297,55 +254,53 @@ int main (int argc, char *argv[])
 
         if (device)
         {
-            const char *read_dev_path;
-	    const char *read_dev_action;
+            const char *read_dev_path = udev_device_get_devnode(device);
+            const char *read_dev_action = udev_device_get_action(device);
 
-            read_dev_path = udev_device_get_devnode(device);
-	    read_dev_action = udev_device_get_action(device);
-
-            // a usb device has been added
-            if (strcmp(read_dev_action, "add") == 0)
+            //read_dev_path = udev_device_get_devnode(device);
+            //read_dev_action = udev_device_get_action(device);
+            if (read_dev_path != NULL)
             {
-                // if the device is a mouse then disable the touchpad
-                if (check_for_mouse(device) == true)
+                // a usb device has been added
+                if (strcmp(read_dev_action, "add") == 0)
                 {
-		    // this section of code is to avoid exessive writes of the
-		    // saved device file. The basic logic is that if the file
-		    // exists the check if the contents are the same as the
-		    // current plugged in device. If the contents to not match
-		    // current device update the file.
-		    if (check_file(saved_file_path) == true)
-		    {
-	 		 char *saved_device;
+                    // if the device is a mouse then disable the touchpad
+                    if (check_for_mouse(device) == true)
+                    {
+                        // this section of code is to avoid exessive writes of the
+                        // saved device file. The basic logic is that if the file
+                        // exists the check if the contents are the same as the
+                        // current plugged in device. If the contents to not match
+                        // current device update the file.
+                        if (check_file(saved_file_path) == true)
+                        {
+                            char *saved_device = read_saved_device(saved_file_path);
 
-		         saved_device = read_saved_device(saved_file_path);
+                            if (strcmp(saved_device, read_dev_path) != 0)
+                            {
+                                // write the saved device file since a device was plugged in
+                                write_saved_device(read_dev_path, saved_file_path);
+                            }
+                        }
+                        else
+                        {
+                            write_saved_device(read_dev_path, saved_file_path);
+                        }
 
-		         if (strcmp(saved_device, read_dev_path) != 0)
-			 {
-			    // write the saved device file since a device was plugged in
-		    	    write_saved_device(read_dev_path, saved_file_path);
-			 }
-
-		         free(saved_device);
-		    }
-		    else
-		    {
-			write_saved_device(read_dev_path, saved_file_path);
-		    }
-
-		    // disable the touchpad
-                    system("synclient TouchpadOff=1");
+                        // disable the touchpad
+                        system("synclient TouchpadOff=1");
+                    }
                 }
-            }
 
-	    // a usb device has been removed
-            if (strcmp(read_dev_action, "remove") == 0)
-            {
-                // check if the device has been removed
-		if (check_for_mouse(device) == true)
-		{
-		   system("synclient TouchpadOff=0");
-		}
+                // a usb device has been removed
+                if (strcmp(read_dev_action, "remove") == 0)
+                {
+                    // check if the device has been removed
+                    if (check_for_mouse(device) == true)
+                    {
+                        system("synclient TouchpadOff=0");
+                    }
+                }
             }
         }
 
@@ -359,10 +314,10 @@ int main (int argc, char *argv[])
     free(udev);
     free(device_monitor);
     free(device);
-    free(dev_enum);
 
     free(saved_file_path);
     free(file_contents_buffer);
 
     return 0;
 }
+
