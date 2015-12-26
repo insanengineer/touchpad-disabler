@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="apps.touchpad-disabler" path="/apps/touchpad-disabler/">
+    <key name="saved-device" type="s">
+      <default>' '</default>
+      <summary>Saved Device Name</summary>
+      <description>
+        The device that was plugged in, is saved to keep the touchpad
+	disablement non volitile.
+      </description>
+    </key>
+    <key type="b" name="enable-notifications">
+      <default>true</default>
+      <summary>Enable Notifications</summary>
+      <description>
+        Set this value to true to enable notifications when the
+	touchpad is disabled or enabled.
+      </description>
+    </key>
+  </schema>
+</schemalist>

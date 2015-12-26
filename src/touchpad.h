@@ -16,16 +16,16 @@
 **    If not, see <http://www.gnu.org/licenses/>.
 **
 ****************************************************************************/
-#ifndef _touchpad_disabler_h
-#define _touchpad_disabler_h
+#ifndef _touchpad_h
+#define _touchpad_h
 
-#include <stdbool.h>
+int get_touchpad_state();
+int set_touchpad_sate(const char *state);
 
-char *get_saved_file_path();
-bool check_file(char file_path[]);
-bool check_device(struct udev_device *dev, char buffer[]);
-bool check_for_mouse(struct udev_device *dev);
-char *read_saved_device(char file_path[]);
-void write_saved_device(const char data[], char file_path[]);
+int get_clickpad_setting();
+int set_clickpad_state(const char *state);
+
+int get_clickpad_xinput_id();
+int set_touchpad_xinput_state(const char *state);
 
 #endif
