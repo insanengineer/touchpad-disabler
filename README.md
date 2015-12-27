@@ -64,3 +64,5 @@ gsettings set apps.touchpad-disabler enable-notifications true
 * Create a AUR package
 * Create a ubuntu and debian package
 * Wayland support
+* Gnome shell extention that exposes the gsettings and indicates if the
+  application is running.
