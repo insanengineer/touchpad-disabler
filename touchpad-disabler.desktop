@@ -1,0 +1,6 @@
+	[Desktop Entry]
+	Name=Touchpad Disabler
+	Exec=/opt/touchpad-disabler/touchpad-disabler
+	Icon=/usr/share/icons/Adwaita/48x48/devices/input-touchpad.png
+	Type=Application
+	Categories=Utility;
