@@ -1,18 +1,22 @@
 /****************************************************************************
-** This file is part of touchpad-disabler.
+** Touchpad Disabler is an application that will disable the touchpad when
+** a usb mouse has been plugged in.
+** Copyright (C) 2015 Keith Lewis
 **
-**    Foobar is free software: you can redistribute it and/or modify
+** This file is part of Touchpad Disabler.
+**
+**    Touchpad Disabler is free software: you can redistribute it and/or modify
 **    it under the terms of the GNU General Public License as published by
 **    the Free Software Foundation, either version 3 of the License, or
 **    (at your option) any later version.
 **
-**    Foobar is distributed in the hope that it will be useful,
+**    Touchpad Disabler  is distributed in the hope that it will be useful,
 **    but WITHOUT ANY WARRANTY; without even the implied warranty of
 **    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 **    GNU General Public License for more details.
 **
 **    You should have received a copy of the GNU General Public License
-**    along with touchpad-disabler.
+**    along with Touchpad Disabler.
 **    If not, see <http://www.gnu.org/licenses/>.
 **
 ****************************************************************************/
@@ -23,7 +27,7 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include <libudev.h>
-#include<signal.h>
+#include <signal.h>
 #include <gio/gio.h>
 #include <libnotify/notify.h>
 
@@ -95,6 +99,32 @@ int check_for_mouse(struct udev_device *dev)
 }
 
 /****************************************************************************
+** Function Name: get_vendor_id_model_id_string
+**
+** Inputs: udev device
+**
+** Output: string
+**
+** Description: string containing vendor and model id
+**
+****************************************************************************/
+char *get_vendor_id_model_id_string(struct udev_device *dev)
+{
+   char ven_mod_string[10];
+
+   const char *vendor_id = udev_device_get_property_value(dev, "ID_MODEL_ID");
+   const char *model_id = udev_device_get_property_value(dev, "ID_VENDOR_ID");
+
+   snprintf(ven_mod_string, 10, "%s:%s", vendor_id, model_id);
+
+   printf("%s\n", ven_mod_string);
+
+   char *new_str = ven_mod_string;
+
+   return new_str;
+}
+
+/****************************************************************************
 ** Function Name: main
 **
 ** Inputs: application inputs
@@ -104,7 +134,7 @@ int check_for_mouse(struct udev_device *dev)
 ** Description: main
 **
 ****************************************************************************/
-int main (void)//int argc, char *argv[])
+int main (void)
 {
     const char *schema_id = "apps.touchpad-disabler";
     GSettings *settings = g_settings_new (schema_id);
@@ -154,19 +184,16 @@ int main (void)//int argc, char *argv[])
 
             if (dev_node != NULL)
             {
-                if (check_for_mouse(device) == 0)
+	        if (check_for_mouse(device) == 0)
                 {
                     char *saved_device = g_settings_get_string(settings, "saved-device");
 		    bool notifications_enabled = g_settings_get_boolean(settings, "enable-notifications");
 
-		    if (strcmp(dev_node, saved_device) == 0)
-                    {
-                        set_touchpad_xinput_state("OFF");
-			send_notification(user_notfication, notifications_enabled, "disable");
-                        break;
-                    }
+                    set_touchpad_xinput_state("OFF");
+	            send_notification(user_notfication, notifications_enabled, "disable");
 
 		    free(saved_device);
+		    break;
                 }
             }
         }
@@ -180,7 +207,7 @@ int main (void)//int argc, char *argv[])
     {
         // recieve the usb event
         // this function is blocking. since this is the sole purpose of this
-        // applicaiton block is ok
+        // application blocking is ok
         struct udev_device *device = udev_monitor_receive_device(device_monitor);
 
         if (device)
@@ -199,12 +226,6 @@ int main (void)//int argc, char *argv[])
                     // if the device is a mouse then disable the touchpad
                     if (check_for_mouse(device) == 0)
                     {
-                        if (strcmp(saved_device, read_dev_path) != 0)
-                        {
-                	    // write the saved device file since a device was plugged in
-			    g_settings_set_string(settings, "saved-device", read_dev_path);
-                        }
-
 		        set_touchpad_xinput_state("OFF");
 		        send_notification(user_notfication, notifications_enabled, "disable");
                     }
@@ -216,11 +237,8 @@ int main (void)//int argc, char *argv[])
                     // check if the device has been removed
                     if (check_for_mouse(device) == 0)
                     {
-                        if (strcmp(saved_device, read_dev_path) == 0)
-			{
-			   set_touchpad_xinput_state("ON");
-			   send_notification(user_notfication, notifications_enabled, "enable");
-			}
+			set_touchpad_xinput_state("ON");
+			send_notification(user_notfication, notifications_enabled, "enable");
                     }
                 }
 
