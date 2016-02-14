@@ -186,13 +186,10 @@ int main (void)
             {
 	        if (check_for_mouse(device) == 0)
                 {
-                    char *saved_device = g_settings_get_string(settings, "saved-device");
-		    bool notifications_enabled = g_settings_get_boolean(settings, "enable-notifications");
+                    bool notifications_enabled = g_settings_get_boolean(settings, "enable-notifications");
 
                     set_touchpad_xinput_state("OFF");
 	            send_notification(user_notfication, notifications_enabled, "disable");
-
-		    free(saved_device);
 		    break;
                 }
             }
