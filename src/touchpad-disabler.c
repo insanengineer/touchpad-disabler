@@ -214,7 +214,6 @@ int main (void)
 
             if (read_dev_path != NULL)
             {
-                char *saved_device = g_settings_get_string(settings, "saved-device");
 	        bool notifications_enabled = g_settings_get_boolean(settings, "enable-notifications");
 
 	        // a usb device has been added
@@ -238,8 +237,6 @@ int main (void)
 			send_notification(user_notfication, notifications_enabled, "enable");
                     }
                 }
-
-	        free(saved_device);
             }
         }
 
