@@ -92,7 +92,7 @@ int check_for_mouse(struct udev_device *dev)
 
     if (mouse_detect != NULL)
     {
-        result = 0;
+      	result = 0;
     }
 
     return result;
@@ -181,18 +181,27 @@ int main (void)
         if (device)
         {
             const char *dev_node = udev_device_get_devnode(device);
+	    const char *name = udev_device_get_sysattr_value(device,"name");
 
-            if (dev_node != NULL)
-            {
-	        if (check_for_mouse(device) == 0)
-                {
-                    bool notifications_enabled = g_settings_get_boolean(settings, "enable-notifications");
+	    if (name != NULL)
+	    {
+               if (strstr(name, "Synaptics") == NULL)
+	       {
+		  printf("Device Name: %s\n", name);
 
-                    set_touchpad_xinput_state("OFF");
-	            send_notification(user_notfication, notifications_enabled, "disable");
-		    break;
-                }
-            }
+		  if (dev_node != NULL)
+		  {
+		      if (check_for_mouse(device) == 0)
+                      {
+		         bool notifications_enabled = g_settings_get_boolean(settings, "enable-notifications");
+
+                         set_touchpad_xinput_state("OFF");
+	                 send_notification(user_notfication, notifications_enabled, "disable");
+		         break;
+		      }
+		  }
+	       }
+	    }
         }
 
         udev_device_unref(device);
@@ -233,7 +242,7 @@ int main (void)
                     // check if the device has been removed
                     if (check_for_mouse(device) == 0)
                     {
-			set_touchpad_xinput_state("ON");
+		        set_touchpad_xinput_state("ON");
 			send_notification(user_notfication, notifications_enabled, "enable");
                     }
                 }
